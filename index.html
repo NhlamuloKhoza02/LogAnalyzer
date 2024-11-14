@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Analyzer for Security Events</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #results {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Log Analyzer for Security Events</h1>
+  <p>Paste your server/application logs below:</p>
+  <textarea id="logInput" placeholder="Paste logs here..."></textarea>
+  <button onclick="analyzeLogs()">Analyze Logs</button>
+
+  <div id="results">
+    <h3>Analysis Results:</h3>
+    <table id="resultTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>IP Address</th>
+          <th>Failed Attempts</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="exportBtn" style="display:none;" onclick="exportCSV()">Export to CSV</button>
+  </div>
+
+  <script>
+    function analyzeLogs() {
+      const logInput = document.getElementById('logInput').value;
+      const lines = logInput.split('\n');
+      const ipCounts = {};
+
+      // Parse log lines and detect failed login attempts (assuming format contains 'Failed login' and IP address)
+      lines.forEach(line => {
+        if (line.includes('Failed login')) {
+          const ipMatch = line.match(/(\d+\.\d+\.\d+\.\d+)/);  // Regex to find IP address
+          if (ipMatch) {
+            const ip = ipMatch[0];
+            ipCounts[ip] = (ipCounts[ip] || 0) + 1;
+          }
+        }
+      });
+
+      displayResults(ipCounts);
+    }
+
+    function displayResults(ipCounts) {
+      const tableBody = document.querySelector('#resultTable tbody');
+      tableBody.innerHTML = '';  // Clear previous results
+
+      // Display each IP and the number of failed attempts
+      for (const ip in ipCounts) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${ip}</td><td>${ipCounts[ip]}</td>`;
+        tableBody.appendChild(row);
+      }
+
+      // Show the table and the export button
+      document.getElementById('resultTable').style.display = 'table';
+      document.getElementById('exportBtn').style.display = 'inline-block';
+    }
+
+    // Function to export the results to CSV
+    function exportCSV() {
+      const table = document.getElementById('resultTable');
+      let csv = 'IP Address,Failed Attempts\n';
+      for (let i = 1; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const ip = row.cells[0].innerText;
+        const attempts = row.cells[1].innerText;
+        csv += `${ip},${attempts}\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'failed_login_attempts.csv';
+      link.click();
+    }
+  </script>
+
+</body>
+</html>
